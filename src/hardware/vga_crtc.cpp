@@ -28,6 +28,7 @@
 
 #define crtc(blah) vga.crtc.blah
 
+extern int hackit;
 
 void VGA_MapMMIO(void);
 void VGA_UnmapMMIO(void);
@@ -190,11 +191,13 @@ void vga_write_p3d5(Bitu port,Bitu val,Bitu iolen) {
 		*/
 		break;
 	case 0x0C:	/* Start Address High Register */
+		if (hackit) val = 0;
 		crtc(start_address_high)=val;
 		vga.config.display_start=(vga.config.display_start & 0xFF00FF)| (val << 8);
 		/* 0-7  Upper 8 bits of the start address of the display buffer */
 		break;
 	case 0x0D:	/* Start Address Low Register */
+		if (hackit) val = 0;
 		crtc(start_address_low)=val;
 		vga.config.display_start=(vga.config.display_start & 0xFFFF00)| val;
 		/*	0-7	Lower 8 bits of the start address of the display buffer */

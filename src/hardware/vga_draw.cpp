@@ -32,6 +32,8 @@
 
 #define VGA_PARTS 4
 
+int hackit = 0;
+
 typedef Bit8u * (* VGA_Line_Handler)(Bitu vidstart, Bitu line);
 
 static VGA_Line_Handler VGA_DrawLine;
@@ -720,14 +722,17 @@ static void VGA_DrawPart(Bitu lines) {
 			vga.draw.address+=vga.draw.address_add;
 		}
 		vga.draw.lines_done++;
-		if (vga.draw.split_line==vga.draw.lines_done) {
+		//if (vga.draw.split_line==vga.draw.lines_done) {
+		if (hackit == 0) {
+			if (vga.draw.split_line == vga.draw.lines_done) {
 #ifdef VGA_KEEP_CHANGES
-			VGA_ChangesEnd( );
+			VGA_ChangesEnd();
 #endif
 			VGA_ProcessSplit();
 #ifdef VGA_KEEP_CHANGES
 			vga.changes.start = vga.draw.address >> VGA_CHANGE_SHIFT;
 #endif
+			}
 		}
 	}
 	if (--vga.draw.parts_left) {
@@ -1529,6 +1534,15 @@ void VGA_SetupDrawing(Bitu /*val*/) {
 			height/=2;
 		}
 	}
+
+	if (height == 350) {
+		height = 608;
+		hackit = true;
+	}
+	else {
+		hackit = false;
+	}
+
 	vga.draw.lines_total=height;
 	vga.draw.parts_lines=vga.draw.lines_total/vga.draw.parts_total;
 	vga.draw.line_length = width * ((bpp + 1) / 8);
@@ -1581,6 +1595,7 @@ void VGA_SetupDrawing(Bitu /*val*/) {
 
 		vga.draw.width = width;
 		vga.draw.height = height;
+		if (hackit) doublewidth = false;
 		vga.draw.doublewidth = doublewidth;
 		vga.draw.doubleheight = doubleheight;
 		vga.draw.aspect_ratio = aspect_ratio;
