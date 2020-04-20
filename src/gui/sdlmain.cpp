@@ -230,6 +230,11 @@ SDL_Surface* SDL_SetVideoMode_Wrap(int width,int height,int bpp,Bit32u flags){
 	static int i_width = 0;
 	static int i_bpp = 0;
 	static Bit32u i_flags = 0;
+
+	width *= 2;
+	height *= 2;
+
+
 	if (sdl.surface != NULL && height == i_height && width == i_width && bpp == i_bpp && flags == i_flags) {
 		// I don't see a difference, so disabled for now, as the code isn't finished either
 #if SETMODE_SAVES_CLEAR
@@ -705,12 +710,15 @@ dosurface:
 		}
 		sdl.opengl.pitch=width*4;
 
-		if(sdl.clip.x ==0 && sdl.clip.y ==0 && sdl.desktop.fullscreen && !sdl.desktop.full.fixed && (sdl.clip.w != sdl.surface->w || sdl.clip.h != sdl.surface->h)) { 
-//			LOG_MSG("attempting to fix the centering to %d %d %d %d",(sdl.surface->w-sdl.clip.w)/2,(sdl.surface->h-sdl.clip.h)/2,sdl.clip.w,sdl.clip.h);
-			glViewport((sdl.surface->w-sdl.clip.w)/2,(sdl.surface->h-sdl.clip.h)/2,sdl.clip.w,sdl.clip.h);
-		} else {
-			glViewport(sdl.clip.x,sdl.clip.y,sdl.clip.w,sdl.clip.h);
-		}		
+//		if(sdl.clip.x ==0 && sdl.clip.y ==0 && sdl.desktop.fullscreen && !sdl.desktop.full.fixed && (sdl.clip.w != sdl.surface->w || sdl.clip.h != sdl.surface->h)) { 
+////			LOG_MSG("attempting to fix the centering to %d %d %d %d",(sdl.surface->w-sdl.clip.w)/2,(sdl.surface->h-sdl.clip.h)/2,sdl.clip.w,sdl.clip.h);
+//			glViewport((sdl.surface->w-sdl.clip.w)/2,(sdl.surface->h-sdl.clip.h)/2,sdl.clip.w,sdl.clip.h);
+//		} else {
+//			glViewport(sdl.clip.x,sdl.clip.y,sdl.clip.w,sdl.clip.h);
+//		}		
+
+		// BlackStar additional hack for fantasies
+		glViewport(0, 0, width * 2, height * 2);
 
 		glMatrixMode (GL_PROJECTION);
 		glDeleteTextures(1,&sdl.opengl.texture);
@@ -744,6 +752,10 @@ dosurface:
 		GLfloat tex_width=((GLfloat)(width)/(GLfloat)texsize);
 		GLfloat tex_height=((GLfloat)(height)/(GLfloat)texsize);
 
+		// BlackStar additional hack for zoom
+		//tex_width /= 2;
+		//tex_height /= 2;
+
 		if (glIsList(sdl.opengl.displaylist)) glDeleteLists(sdl.opengl.displaylist, 1);
 		sdl.opengl.displaylist = glGenLists(1);
 		glNewList(sdl.opengl.displaylist, GL_COMPILE);
@@ -757,6 +769,18 @@ dosurface:
 		glTexCoord2f(tex_width,0); glVertex2f(1.0f, 1.0f);
 		// upper left
 		glTexCoord2f(0,0); glVertex2f(-1.0f, 1.0f);
+
+		//// BlackStar additional hack for zoom
+		//// lower left
+		//glTexCoord2f(0, 1); glVertex2f(-1.0f, -1.0f);
+		//// lower right
+		//glTexCoord2f(1, 1); glVertex2f(1.0f, -1.0f);
+		//// upper right
+		//glTexCoord2f(1, 0); glVertex2f(1.0f, 1.0f);
+		//// upper left
+		//glTexCoord2f(0, 0); glVertex2f(-1.0f, 1.0f);
+
+
 		glEnd();
 		glEndList();
 		sdl.desktop.type=SCREEN_OPENGL;
@@ -1290,7 +1314,8 @@ static void GUI_StartUp(Section * sec) {
 	if (!sdl.mouse.autoenable) SDL_ShowCursor(SDL_DISABLE);
 	sdl.mouse.autolock=false;
 	sdl.mouse.sensitivity=section->Get_int("sensitivity");
-	std::string output=section->Get_string("output");
+	//std::string output=section->Get_string("output");
+	std::string output = "opengl";
 
 	/* Setup Mouse correctly if fullscreen */
 	if(sdl.desktop.fullscreen) GFX_CaptureMouse();
