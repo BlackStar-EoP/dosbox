@@ -238,8 +238,9 @@ SDL_Surface* SDL_SetVideoMode_Wrap(int width,int height,int bpp,Bit32u flags){
 	static int i_bpp = 0;
 	static Bit32u i_flags = 0;
 
-	width *= 2;
-	height *= 2;
+	// BlackStar additional hack for zoom
+	//width *= 2;
+	//height *= 2;
 
 
 	if (sdl.surface != NULL && height == i_height && width == i_width && bpp == i_bpp && flags == i_flags) {
@@ -717,15 +718,17 @@ dosurface:
 		}
 		sdl.opengl.pitch=width*4;
 
-//		if(sdl.clip.x ==0 && sdl.clip.y ==0 && sdl.desktop.fullscreen && !sdl.desktop.full.fixed && (sdl.clip.w != sdl.surface->w || sdl.clip.h != sdl.surface->h)) { 
-////			LOG_MSG("attempting to fix the centering to %d %d %d %d",(sdl.surface->w-sdl.clip.w)/2,(sdl.surface->h-sdl.clip.h)/2,sdl.clip.w,sdl.clip.h);
-//			glViewport((sdl.surface->w-sdl.clip.w)/2,(sdl.surface->h-sdl.clip.h)/2,sdl.clip.w,sdl.clip.h);
-//		} else {
-//			glViewport(sdl.clip.x,sdl.clip.y,sdl.clip.w,sdl.clip.h);
-//		}		
+		// Comment for BlackStar zoom hack
+		if(sdl.clip.x ==0 && sdl.clip.y ==0 && sdl.desktop.fullscreen && !sdl.desktop.full.fixed && (sdl.clip.w != sdl.surface->w || sdl.clip.h != sdl.surface->h)) { 
+//			LOG_MSG("attempting to fix the centering to %d %d %d %d",(sdl.surface->w-sdl.clip.w)/2,(sdl.surface->h-sdl.clip.h)/2,sdl.clip.w,sdl.clip.h);
+			glViewport((sdl.surface->w-sdl.clip.w)/2,(sdl.surface->h-sdl.clip.h)/2,sdl.clip.w,sdl.clip.h);
+		} else {
+			glViewport(sdl.clip.x,sdl.clip.y,sdl.clip.w,sdl.clip.h);
+		}		
+		//
 
-		// BlackStar additional hack for fantasies
-		glViewport(0, 0, width * 2, height * 2);
+		// BlackStar additional hack for zoom
+		//glViewport(0, 0, width * 2, height * 2);
 
 		glMatrixMode (GL_PROJECTION);
 		glDeleteTextures(1,&sdl.opengl.texture);
@@ -1035,24 +1038,24 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 		// Access here to image data from DosBox, WIDTH = 320, HEIGHT = 608
 		// Implement access to DMD display via DMD device.
 		// TODO implement class that will handle this. (wrapper)
-		if (sdl.draw.width == 320 && sdl.draw.height == 608)
-		{
-			//glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, sdl.opengl.buffer);
-			//Bit8u *pixels = (Bit8u *)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, GL_READ_ONLY);
-			//printf("");
-			static int imagenr = 0;
-			std::stringstream ss;
+		//if (sdl.draw.width == 320 && sdl.draw.height == 608)
+		//{
+		//	//glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, sdl.opengl.buffer);
+		//	//Bit8u *pixels = (Bit8u *)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, GL_READ_ONLY);
+		//	//printf("");
+		//	static int imagenr = 0;
+		//	std::stringstream ss;
 
-			ss << "d:/pf/shots/shot" << imagenr++ << ".bsr";
+		//	ss << "d:/pf/shots/shot" << imagenr++ << ".bsr";
 
-			FILE* fp = fopen(ss.str().c_str(), "wb");
-			if (fp)
-			{
-				fwrite(sdl.opengl.framebuf, sizeof(uint8_t), 320 * 608 * 4, fp);
-				fclose(fp);
-			}
-			//sdl.surface->pixels
-		}
+		//	FILE* fp = fopen(ss.str().c_str(), "wb");
+		//	if (fp)
+		//	{
+		//		fwrite(sdl.opengl.framebuf, sizeof(uint8_t), 320 * 608 * 4, fp);
+		//		fclose(fp);
+		//	}
+		//	//sdl.surface->pixels
+		//}
 		// End BlackStar image write hack for debug
 
 		if (sdl.opengl.pixel_buffer_object) {
