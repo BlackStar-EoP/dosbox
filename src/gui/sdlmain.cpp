@@ -49,9 +49,16 @@
 #include "cpu.h"
 #include "cross.h"
 #include "control.h"
+#include "render.h"
 
 #define MAPPERFILE "mapper-" VERSION ".map"
 //#define DISABLE_JOYSTICK
+
+// BlackStar, access to hackit if needed. sstream for writing file(name)
+#include <sstream>
+extern int hackit;
+extern Render_t render;
+
 
 #if C_OPENGL
 #include "SDL_opengl.h"
@@ -1024,6 +1031,30 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 		break;
 #if C_OPENGL
 	case SCREEN_OPENGL:
+		// BlackStar:
+		// Access here to image data from DosBox, WIDTH = 320, HEIGHT = 608
+		// Implement access to DMD display via DMD device.
+		// TODO implement class that will handle this. (wrapper)
+		if (sdl.draw.width == 320 && sdl.draw.height == 608)
+		{
+			//glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, sdl.opengl.buffer);
+			//Bit8u *pixels = (Bit8u *)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, GL_READ_ONLY);
+			//printf("");
+			static int imagenr = 0;
+			std::stringstream ss;
+
+			ss << "d:/pf/shots/shot" << imagenr++ << ".bsr";
+
+			FILE* fp = fopen(ss.str().c_str(), "wb");
+			if (fp)
+			{
+				fwrite(sdl.opengl.framebuf, sizeof(uint8_t), 320 * 608 * 4, fp);
+				fclose(fp);
+			}
+			//sdl.surface->pixels
+		}
+		// End BlackStar image write hack for debug
+
 		if (sdl.opengl.pixel_buffer_object) {
 			glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT);
 			glBindTexture(GL_TEXTURE_2D, sdl.opengl.texture);
@@ -1364,9 +1395,13 @@ static void GUI_StartUp(Section * sec) {
 	if(gl_ext && *gl_ext){
 		sdl.opengl.packed_pixel=(strstr(gl_ext,"EXT_packed_pixels") != NULL);
 		sdl.opengl.paletted_texture=(strstr(gl_ext,"EXT_paletted_texture") != NULL);
-		sdl.opengl.pixel_buffer_object=(strstr(gl_ext,"GL_ARB_pixel_buffer_object") != NULL ) &&
-		    glGenBuffersARB && glBindBufferARB && glDeleteBuffersARB && glBufferDataARB &&
-		    glMapBufferARB && glUnmapBufferARB;
+		// BlackStar, attempt to not use PBO
+		//sdl.opengl.pixel_buffer_object=(strstr(gl_ext,"GL_ARB_pixel_buffer_object") != NULL ) &&
+		//    glGenBuffersARB && glBindBufferARB && glDeleteBuffersARB && glBufferDataARB &&
+		//    glMapBufferARB && glUnmapBufferARB;
+		sdl.opengl.pixel_buffer_object = false;
+		// End BlackStar hack
+
     	} else {
 		sdl.opengl.packed_pixel=sdl.opengl.paletted_texture=false;
 	}
