@@ -1537,22 +1537,22 @@ void VGA_SetupDrawing(Bitu /*val*/) {
 
 
 	// BlackStar: Fantasies hack
-	//if (height == 350) {
-	//	height = 608;
-	//	hackit = true;
-	//}
-	//else {
-	//	hackit = false;
-	//}
-
-	// BlackStar: Epic pinball hack
-	if (height == 240) {
-		height = 418;
+	if (height == 350) {
+		height = 608;
 		hackit = true;
 	}
 	else {
 		hackit = false;
 	}
+
+	// BlackStar: Epic pinball hack
+	//if (height == 240) {
+	//	height = 418;
+	//	hackit = true;
+	//}
+	//else {
+	//	hackit = false;
+	//}
 
 	vga.draw.lines_total=height;
 	vga.draw.parts_lines=vga.draw.lines_total/vga.draw.parts_total;

@@ -1041,11 +1041,10 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 		{
 			//glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, sdl.opengl.buffer);
 			//Bit8u *pixels = (Bit8u *)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, GL_READ_ONLY);
-			//printf("");
 			const uint32_t FANTASIES_DMD_WIDTH = 160;
 			const uint32_t FANTASIES_DMD_HEIGHT = 16;
 			const uint32_t FANTASIES_DMD_SIZE = FANTASIES_DMD_WIDTH * FANTASIES_DMD_HEIGHT;
-			//const int startpos = 2560;
+
 			const int startpos = 640; // 640 * 4 = 2560;
 			uint32_t* dmddata = (uint32_t*)(sdl.opengl.framebuf) + startpos;
 			uint8_t DMD_BUFFER[FANTASIES_DMD_SIZE];
@@ -1074,6 +1073,24 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 				++desty;
 			}
 
+			uint8_t SMALL_DMD_BUFFER[FANTASIES_DMD_SIZE / 8];
+			uint32_t blockindex = 0;
+			for (uint32_t block = 0; block < FANTASIES_DMD_SIZE; block += 8)
+			{
+				uint8_t bitblock = 0;
+				for (uint32_t pixel = 0; pixel < 8; ++pixel)
+				{
+					if (DMD_BUFFER[block +pixel] == 255)
+					{
+						uint8_t bit = 1;
+						bit <<= pixel;
+						bitblock |= bit;
+						printf("");
+					}
+				}
+				SMALL_DMD_BUFFER[blockindex++] = bitblock;
+			}
+
 			static int imagenr = 0;
 			std::stringstream ss;
 
@@ -1082,10 +1099,9 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 			FILE* fp = fopen(ss.str().c_str(), "wb");
 			if (fp)
 			{
-				fwrite(DMD_BUFFER, sizeof(uint8_t), FANTASIES_DMD_SIZE, fp);
+				fwrite(SMALL_DMD_BUFFER, sizeof(uint8_t), FANTASIES_DMD_SIZE / 8, fp);
 				fclose(fp);
 			}
-			//sdl.surface->pixels
 		}
 		// End BlackStar image write hack for debug
 
