@@ -242,7 +242,6 @@ SDL_Surface* SDL_SetVideoMode_Wrap(int width,int height,int bpp,Bit32u flags){
 	//width *= 2;
 	//height *= 2;
 
-
 	if (sdl.surface != NULL && height == i_height && width == i_width && bpp == i_bpp && flags == i_flags) {
 		// I don't see a difference, so disabled for now, as the code isn't finished either
 #if SETMODE_SAVES_CLEAR
@@ -1038,24 +1037,56 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 		// Access here to image data from DosBox, WIDTH = 320, HEIGHT = 608
 		// Implement access to DMD display via DMD device.
 		// TODO implement class that will handle this. (wrapper)
-		//if (sdl.draw.width == 320 && sdl.draw.height == 608)
-		//{
-		//	//glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, sdl.opengl.buffer);
-		//	//Bit8u *pixels = (Bit8u *)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, GL_READ_ONLY);
-		//	//printf("");
-		//	static int imagenr = 0;
-		//	std::stringstream ss;
+		if (sdl.draw.width == 320 && sdl.draw.height == 608)
+		{
+			//glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, sdl.opengl.buffer);
+			//Bit8u *pixels = (Bit8u *)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, GL_READ_ONLY);
+			//printf("");
+			const uint32_t FANTASIES_DMD_WIDTH = 160;
+			const uint32_t FANTASIES_DMD_HEIGHT = 16;
+			const uint32_t FANTASIES_DMD_SIZE = FANTASIES_DMD_WIDTH * FANTASIES_DMD_HEIGHT;
+			//const int startpos = 2560;
+			const int startpos = 640; // 640 * 4 = 2560;
+			uint32_t* dmddata = (uint32_t*)(sdl.opengl.framebuf) + startpos;
+			uint8_t DMD_BUFFER[FANTASIES_DMD_SIZE];
+			memset(DMD_BUFFER, 0, sizeof(DMD_BUFFER));
 
-		//	ss << "d:/pf/shots/shot" << imagenr++ << ".bsr";
+			int desty = 0;
+			for (uint32_t y = 0; y < FANTASIES_DMD_HEIGHT + 0; ++y)
+			{
+				for (uint32_t x = 0; x < FANTASIES_DMD_WIDTH; ++x)
+				{
+					//uint32_t pixel = img.pixel(x * 2, y * 2);
+					uint32_t pixel = dmddata[(y * 320 * 2) + (x * 2)];
+					switch (pixel)
+					{
+					case 0xff000000:
+						break;
+					case 0xff515151:
+						break;
+					case 0xff555555:
+						break;
+					case 0xfff3b245:
+						DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 255;
+						break;
+					}
+				}
+				++desty;
+			}
 
-		//	FILE* fp = fopen(ss.str().c_str(), "wb");
-		//	if (fp)
-		//	{
-		//		fwrite(sdl.opengl.framebuf, sizeof(uint8_t), 320 * 608 * 4, fp);
-		//		fclose(fp);
-		//	}
-		//	//sdl.surface->pixels
-		//}
+			static int imagenr = 0;
+			std::stringstream ss;
+
+			ss << "d:/pf/dmd/shot" << imagenr++ << ".dmd";
+
+			FILE* fp = fopen(ss.str().c_str(), "wb");
+			if (fp)
+			{
+				fwrite(DMD_BUFFER, sizeof(uint8_t), FANTASIES_DMD_SIZE, fp);
+				fclose(fp);
+			}
+			//sdl.surface->pixels
+		}
 		// End BlackStar image write hack for debug
 
 		if (sdl.opengl.pixel_buffer_object) {
