@@ -964,8 +964,41 @@ bool GFX_StartUpdate(Bit8u * & pixels,Bitu & pitch) {
 	return false;
 }
 
+const uint32_t FANTASIES_DMD_WIDTH = 160;
+const uint32_t FANTASIES_DMD_HEIGHT = 16;
+const uint32_t FANTASIES_DMD_SIZE = FANTASIES_DMD_WIDTH * FANTASIES_DMD_HEIGHT;
+
+const int startpos = 640; // 640 * 4 = 2560;
+const uint32_t SMALL_DMD_SIZE = FANTASIES_DMD_SIZE / 8;
+const uint32_t WRITE_DELAY = 1000;
+
+class BitDMD
+{
+public:
+	uint8_t buffer[SMALL_DMD_SIZE];
+
+	bool operator == (const BitDMD& dmd) const
+	{
+		return memcmp(dmd.buffer, buffer, SMALL_DMD_SIZE) == 0;
+	}
+
+	bool operator != (const BitDMD& dmd) const
+	{
+		return !(dmd == *this);
+	}
+};
+
+#include <vector>
+std::vector<BitDMD> dmd;
 
 void GFX_EndUpdate( const Bit16u *changedLines ) {
+	static bool init = false;
+	if (!init)
+	{
+		init = true;
+		dmd.resize(WRITE_DELAY);
+	}
+
 #if C_DDRAW
 	int ret;
 #endif
@@ -1041,39 +1074,38 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 		{
 			//glBindBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, sdl.opengl.buffer);
 			//Bit8u *pixels = (Bit8u *)glMapBufferARB(GL_PIXEL_UNPACK_BUFFER_EXT, GL_READ_ONLY);
-			const uint32_t FANTASIES_DMD_WIDTH = 160;
-			const uint32_t FANTASIES_DMD_HEIGHT = 16;
-			const uint32_t FANTASIES_DMD_SIZE = FANTASIES_DMD_WIDTH * FANTASIES_DMD_HEIGHT;
-
-			const int startpos = 640; // 640 * 4 = 2560;
+			
 			uint32_t* dmddata = (uint32_t*)(sdl.opengl.framebuf) + startpos;
 			uint8_t DMD_BUFFER[FANTASIES_DMD_SIZE];
-			memset(DMD_BUFFER, 0, sizeof(DMD_BUFFER));
-
+			
 			int desty = 0;
 			for (uint32_t y = 0; y < FANTASIES_DMD_HEIGHT + 0; ++y)
 			{
 				for (uint32_t x = 0; x < FANTASIES_DMD_WIDTH; ++x)
 				{
-					//uint32_t pixel = img.pixel(x * 2, y * 2);
 					uint32_t pixel = dmddata[(y * 320 * 2) + (x * 2)];
-					switch (pixel)
-					{
-					case 0xff000000:
-						break;
-					case 0xff515151:
-						break;
-					case 0xff555555:
-						break;
-					case 0xfff3b245:
+					uint32_t r = (pixel >> 16) & 0x000000FF;
+					if (r > 200)
 						DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 255;
-						break;
-					}
+					else
+						DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 0;
+					//switch (pixel)
+					//{
+					//default:
+					//	DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 0;
+					//	break;
+					//case 0xfff3b245:
+					//case 0xfff3d330:
+					//	DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 255;
+					//	break;
+					//}
 				}
 				++desty;
 			}
 
-			uint8_t SMALL_DMD_BUFFER[FANTASIES_DMD_SIZE / 8];
+			static uint32_t current_buffer_index = 0;
+
+			uint8_t* SMALL_DMD_BUFFER = dmd[current_buffer_index].buffer;
 			uint32_t blockindex = 0;
 			for (uint32_t block = 0; block < FANTASIES_DMD_SIZE; block += 8)
 			{
@@ -1085,22 +1117,39 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 						uint8_t bit = 1;
 						bit <<= pixel;
 						bitblock |= bit;
-						printf("");
 					}
 				}
 				SMALL_DMD_BUFFER[blockindex++] = bitblock;
 			}
-
-			static int imagenr = 0;
-			std::stringstream ss;
-
-			ss << "d:/pf/dmd/shot" << imagenr++ << ".dmd";
-
-			FILE* fp = fopen(ss.str().c_str(), "wb");
-			if (fp)
+			if (current_buffer_index > 0)
 			{
-				fwrite(SMALL_DMD_BUFFER, sizeof(uint8_t), FANTASIES_DMD_SIZE / 8, fp);
-				fclose(fp);
+				if (dmd[current_buffer_index] != dmd[current_buffer_index - 1])
+				{
+					current_buffer_index++;
+				}
+			}
+			else
+			{
+				current_buffer_index++;
+			}
+			if (current_buffer_index == WRITE_DELAY)
+			{
+				current_buffer_index = 0;
+				for (uint32_t i = 0; i < WRITE_DELAY; ++i)
+				{
+					static int imagenr = 0;
+					std::stringstream ss;
+					uint8_t* buffer = dmd[i].buffer;
+
+					ss << "d:/pf/dmd/shot" << imagenr++ << ".dmd";
+
+					FILE* fp = fopen(ss.str().c_str(), "wb");
+					if (fp)
+					{
+						fwrite(buffer, sizeof(uint8_t), SMALL_DMD_SIZE, fp);
+						fclose(fp);
+					}
+				}
 			}
 		}
 		// End BlackStar image write hack for debug
