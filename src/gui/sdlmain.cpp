@@ -1084,21 +1084,23 @@ void GFX_EndUpdate( const Bit16u *changedLines ) {
 				for (uint32_t x = 0; x < FANTASIES_DMD_WIDTH; ++x)
 				{
 					uint32_t pixel = dmddata[(y * 320 * 2) + (x * 2)];
-					uint32_t r = (pixel >> 16) & 0x000000FF;
+/*					uint32_t r = (pixel >> 16) & 0x000000FF;
 					if (r > 200)
 						DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 255;
 					else
+						DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 0;*/
+					switch (pixel)
+					{
+					default:
 						DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 0;
-					//switch (pixel)
-					//{
-					//default:
-					//	DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 0;
-					//	break;
-					//case 0xfff3b245:
-					//case 0xfff3d330:
-					//	DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 255;
-					//	break;
-					//}
+						break;
+					case 0xfff3b245:
+						DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 255;
+						break;
+					case 0xfff3d330:
+						DMD_BUFFER[desty * FANTASIES_DMD_WIDTH + x] = 255;
+						break;
+					}
 				}
 				++desty;
 			}
